@@ -15,7 +15,8 @@ export function VideoGrid({ localStream, remoteStreams, showLocal = true }: Vide
     }
   }, [localStream]);
 
-  const totalVideos = (showLocal ? 1 : 0) + remoteStreams.size;
+  // Local video is now floating, so we only count remote streams for the grid
+  const totalVideos = remoteStreams.size;
   const gridClass = getGridClass(totalVideos);
 
   return (
@@ -63,8 +64,9 @@ function RemoteVideo({ peerId, stream }: { peerId: string; stream: MediaStream }
 }
 
 function getGridClass(count: number): string {
-  if (count === 1) return 'grid-1';
+  if (count <= 1) return 'grid-1';
   if (count === 2) return 'grid-2';
   if (count <= 4) return 'grid-4';
-  return 'grid-6';
+  if (count <= 6) return 'grid-6';
+  return 'grid-9';
 }

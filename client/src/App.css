@@ -79,9 +79,12 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -140,24 +143,38 @@ body {
   gap: 0.5rem;
   padding: 0.5rem;
   background: #000;
+  /* Ensure grid takes full height but doesn't overflow */
+  height: 100%;
+  overflow: hidden;
 }
 
 .video-grid.grid-1 {
   grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
 }
 
 .video-grid.grid-2 {
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr;
 }
 
+.video-grid.grid-3,
 .video-grid.grid-4 {
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
 }
 
+.video-grid.grid-5,
 .video-grid.grid-6 {
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
+}
+
+.video-grid.grid-7,
+.video-grid.grid-8,
+.video-grid.grid-9 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
 }
 
 .video-container {
@@ -174,6 +191,17 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.video-container.local {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  width: 200px;
+  height: 150px;
+  z-index: 50;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .video-container.local .video {
@@ -231,9 +259,27 @@ body {
     font-size: 1rem;
   }
 
-  .video-grid.grid-4,
-  .video-grid.grid-6 {
+  .video-grid.grid-2 {
     grid-template-columns: 1fr;
-    grid-auto-rows: 1fr;
+    grid-template-rows: repeat(2, 1fr);
+  }
+
+  .video-grid.grid-3,
+  .video-grid.grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+
+  .video-grid.grid-5,
+  .video-grid.grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+
+  .video-container.local {
+    width: 120px;
+    height: 90px;
+    bottom: 1rem;
+    right: 1rem;
   }
 }
