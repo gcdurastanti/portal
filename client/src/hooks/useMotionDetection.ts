@@ -15,6 +15,9 @@ export function useMotionDetection(
   const detectMotion = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      if (video && video.readyState !== video.HAVE_ENOUGH_DATA) {
+        console.debug(`Video not ready: ${video.readyState}`);
+      }
       return false;
     }
 
@@ -55,11 +58,15 @@ export function useMotionDetection(
 
     previousFrameRef.current = currentFrame;
 
-    // Consider motion detected if > 1% of pixels changed significantly
+    // Consider motion detected if > 0.1% of pixels changed significantly
     const totalPixels = canvas.width * canvas.height;
     const motionPercentage = (diffCount / totalPixels) * 100;
 
-    return motionPercentage > 1;
+    if (motionPercentage > 0) {
+      console.debug(`Motion percentage: ${motionPercentage.toFixed(2)}%`);
+    }
+
+    return motionPercentage > 0.1;
   }, [videoRef]);
 
   const checkMotion = useCallback(() => {

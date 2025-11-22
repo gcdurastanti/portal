@@ -93,11 +93,24 @@ export class SignalingServer {
   private handleRegister(socket: Socket, payload: RegisterPayload) {
     const { deviceId, groupId, deviceName } = payload;
 
+    // Ensure group exists
+    if (!this.db.getGroup(groupId)) {
+      try {
+        console.log(`Creating new group: ${groupId}`);
+        this.db.createGroup(groupId, 'Family Group');
+      } catch (error) {
+        console.error('Failed to create group:', error);
+        this.sendError(socket, 'GROUP_CREATION_FAILED', 'Failed to create group');
+        return;
+      }
+    }
+
     // Check if device exists, create if not
     if (!this.db.deviceExists(deviceId)) {
       try {
         this.db.createDevice(deviceId, groupId, deviceName);
       } catch (error) {
+        console.error('Failed to register device:', error);
         this.sendError(socket, 'REGISTER_FAILED', 'Failed to register device');
         return;
       }
@@ -176,8 +189,8 @@ export class SignalingServer {
 
     // If conference already active with same participants, do nothing
     if (existingConference &&
-        existingConference.size === participantIds.length &&
-        participantIds.every(id => existingConference.has(id))) {
+      existingConference.size === participantIds.length &&
+      participantIds.every(id => existingConference.has(id))) {
       return;
     }
 

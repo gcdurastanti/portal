@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Device } from '@portal/shared';
 
 interface StatusBarProps {

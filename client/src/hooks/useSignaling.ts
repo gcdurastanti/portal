@@ -58,6 +58,9 @@ export function useSignaling() {
 
     socket.on('message', (msg: Message) => {
       console.log('Message received:', msg.type);
+      if (msg.type === MessageType.ERROR) {
+        console.error('Server error:', msg.payload);
+      }
 
       // Handle presence updates
       if (msg.type === MessageType.PRESENCE_UPDATE) {

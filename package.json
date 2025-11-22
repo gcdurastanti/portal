@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspace=@portal/shared && npm run build --workspaces",
     "start:server": "npm run start --workspace=server",
     "start:client": "npm run start --workspace=client"
   },
