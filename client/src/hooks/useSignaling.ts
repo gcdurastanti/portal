@@ -54,6 +54,9 @@ export function useSignaling() {
     socket.on('disconnect', () => {
       console.log('Disconnected from signaling server');
       setConnected(false);
+      setPresentDevices([]);
+      setIsInConference(false);
+      setConferenceParticipants([]);
     });
 
     socket.on('message', (msg: Message) => {

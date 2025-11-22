@@ -9,7 +9,7 @@ dotenv.config();
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const DATABASE_PATH = process.env.DATABASE_PATH || './portal.db';
-const PRESENCE_TIMEOUT = parseInt(process.env.PRESENCE_TIMEOUT || '30000', 10);
+const PRESENCE_TIMEOUT = parseInt(process.env.PRESENCE_TIMEOUT || '70000', 10);
 
 // Create Express app and HTTP server
 const app = express();

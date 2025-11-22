@@ -85,21 +85,23 @@ function App() {
         presentDevices={presentDevices}
       />
 
-      {isInConference ? (
+      {isInConference && (
         <VideoGrid
           localStream={localStream}
           remoteStreams={remoteStreams}
           showLocal={true}
         />
-      ) : (
-        <div className="idle-view">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="preview-video"
-          />
+      )}
+
+      <div className={`idle-view ${isInConference ? 'hidden' : ''}`}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="preview-video"
+        />
+        {!isInConference && (
           <div className="idle-message">
             <h2>Waiting for connection...</h2>
             <p>Walk by your portal to connect with family</p>
@@ -109,8 +111,8 @@ function App() {
               </p>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

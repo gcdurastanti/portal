@@ -132,6 +132,30 @@ export class SignalingServer {
     });
 
     console.log(`Device registered: ${deviceId} (${deviceName}) in group ${groupId}`);
+
+    // Send current presence state
+    const presentDevices = this.presenceManager.getPresentDevicesInGroup(groupId);
+    this.sendMessage(socket, {
+      type: MessageType.PRESENCE_UPDATE,
+      payload: {
+        groupId,
+        presentDevices
+      },
+      timestamp: Date.now()
+    });
+
+    // If there's an active conference, notify the new client
+    const conferenceParticipants = this.activeConferences.get(groupId);
+    if (conferenceParticipants && conferenceParticipants.size >= 2) {
+      this.sendMessage(socket, {
+        type: MessageType.CONFERENCE_START,
+        payload: {
+          conferenceId: groupId,
+          participants: Array.from(conferenceParticipants)
+        },
+        timestamp: Date.now()
+      });
+    }
   }
 
   private handleMotionDetected(socket: Socket, payload: MotionDetectedPayload) {
@@ -279,9 +303,19 @@ export class SignalingServer {
     const deviceId = this.socketDevices.get(socket.id);
 
     if (deviceId) {
-      console.log(`Device disconnected: ${deviceId}`);
-      this.presenceManager.markNotPresent(deviceId);
-      this.deviceSockets.delete(deviceId);
+      // Only handle disconnect if this is the current socket for the device
+      // This prevents race conditions where a new connection is established
+      // before the old one is fully cleaned up
+      const currentSocketId = this.deviceSockets.get(deviceId);
+
+      if (currentSocketId === socket.id) {
+        console.log(`Device disconnected: ${deviceId}`);
+        this.presenceManager.markNotPresent(deviceId);
+        this.deviceSockets.delete(deviceId);
+      } else {
+        console.log(`Ignoring disconnect for replaced socket: ${socket.id} (device: ${deviceId})`);
+      }
+
       this.socketDevices.delete(socket.id);
     }
 

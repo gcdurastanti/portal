@@ -95,6 +95,31 @@ export function useMotionDetection(
     animationFrameRef.current = requestAnimationFrame(checkMotion);
   }, [detectMotion, isMotionActive, onMotionDetected, onMotionStopped]);
 
+  // Periodically refresh motion status if active
+  useEffect(() => {
+    if (!isMotionActive) return;
+
+    const interval = setInterval(() => {
+      // If we are still active (which we are, because isMotionActive is true),
+      // we should re-trigger the motion detected event to refresh the server timeout
+      console.log('Refreshing motion status');
+      onMotionDetected();
+
+      // Also reset the local timeout
+      if (motionTimeoutRef.current) {
+        clearTimeout(motionTimeoutRef.current);
+      }
+      motionTimeoutRef.current = setTimeout(() => {
+        console.log('Motion stopped (timeout)');
+        setIsMotionActive(false);
+        onMotionStopped();
+      }, config.motionTimeout);
+
+    }, config.motionTimeout / 2); // Refresh halfway through timeout
+
+    return () => clearInterval(interval);
+  }, [isMotionActive, onMotionDetected, onMotionStopped]);
+
   useEffect(() => {
     // Start motion detection
     animationFrameRef.current = requestAnimationFrame(checkMotion);
