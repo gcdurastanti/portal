@@ -52,6 +52,16 @@ body {
   font-weight: 600;
 }
 
+.status-item.clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.status-item.clickable:hover {
+  opacity: 0.8;
+}
+
 .status-indicator {
   width: 10px;
   height: 10px;
@@ -76,6 +86,11 @@ body {
 
 .status-indicator.inactive {
   background: #666;
+}
+
+.status-indicator.disabled {
+  background: #333;
+  border: 1px solid #666;
 }
 
 @keyframes pulse {

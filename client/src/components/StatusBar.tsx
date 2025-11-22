@@ -6,13 +6,21 @@ interface StatusBarProps {
   isMotionActive: boolean;
   isInConference: boolean;
   presentDevices: Device[];
+  isMuted: boolean;
+  onToggleMute: () => void;
+  isMotionEnabled: boolean;
+  onToggleMotion: () => void;
 }
 
 export function StatusBar({
   connected,
   isMotionActive,
   isInConference,
-  presentDevices
+  presentDevices,
+  isMuted,
+  onToggleMute,
+  isMotionEnabled,
+  onToggleMotion
 }: StatusBarProps) {
   return (
     <div className="status-bar">
@@ -21,9 +29,13 @@ export function StatusBar({
         <span>{connected ? 'Connected' : 'Disconnected'}</span>
       </div>
 
-      <div className="status-item">
-        <div className={`status-indicator ${isMotionActive ? 'active' : 'inactive'}`} />
-        <span>Motion: {isMotionActive ? 'Active' : 'Idle'}</span>
+      <div className="status-item clickable" onClick={onToggleMotion}>
+        <div className={`status-indicator ${isMotionEnabled ? (isMotionActive ? 'active' : 'inactive') : 'disabled'}`} />
+        <span>Motion: {!isMotionEnabled ? 'Off' : (isMotionActive ? 'Active' : 'Idle')}</span>
+      </div>
+
+      <div className="status-item clickable" onClick={onToggleMute}>
+        <span>{isMuted ? '🔇 Muted' : '🔊 Unmuted'}</span>
       </div>
 
       <div className="status-item">

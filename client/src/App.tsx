@@ -4,12 +4,14 @@ import { useMotionDetection } from './hooks/useMotionDetection';
 import { useWebRTC } from './hooks/useWebRTC';
 import { VideoGrid } from './components/VideoGrid';
 import { StatusBar } from './components/StatusBar';
+import { playChime } from './utils/sound';
 import './App.css';
 
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const previousPresenceCount = useRef<number>(0);
 
   const {
     connected,
@@ -22,11 +24,22 @@ function App() {
     reportMotionStopped
   } = useSignaling();
 
-  const { isMotionActive } = useMotionDetection(
+  const [isMuted, setIsMuted] = useState(false);
+
+  const { isMotionActive, isMotionEnabled, toggleMotion } = useMotionDetection(
     videoRef,
     reportMotionDetected,
     reportMotionStopped
   );
+
+  const toggleMute = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
+  };
 
   const { remoteStreams } = useWebRTC({
     localStream,
@@ -34,6 +47,15 @@ function App() {
     sendMessage,
     registerMessageHandler
   });
+
+  // Play chime when presence increases
+  useEffect(() => {
+    // Skip initial load or if count decreases/stays same
+    if (presentDevices.length > previousPresenceCount.current && previousPresenceCount.current > 0) {
+      playChime();
+    }
+    previousPresenceCount.current = presentDevices.length;
+  }, [presentDevices.length]);
 
   // Initialize camera
   useEffect(() => {
@@ -84,6 +106,10 @@ function App() {
         isMotionActive={isMotionActive}
         isInConference={isInConference}
         presentDevices={presentDevices}
+        isMuted={isMuted}
+        onToggleMute={toggleMute}
+        isMotionEnabled={isMotionEnabled}
+        onToggleMotion={toggleMotion}
       />
 
       {isInConference && (

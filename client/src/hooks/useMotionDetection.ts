@@ -69,7 +69,26 @@ export function useMotionDetection(
     return motionPercentage > 0.1;
   }, [videoRef]);
 
+  const [isMotionEnabled, setIsMotionEnabled] = useState(true);
+
+  const toggleMotion = useCallback(() => {
+    setIsMotionEnabled(prev => !prev);
+    if (isMotionEnabled) {
+      // If disabling, ensure we stop any active motion
+      setIsMotionActive(false);
+      onMotionStopped();
+      if (motionTimeoutRef.current) {
+        clearTimeout(motionTimeoutRef.current);
+      }
+    }
+  }, [isMotionEnabled, onMotionStopped]);
+
   const checkMotion = useCallback(() => {
+    if (!isMotionEnabled) {
+      animationFrameRef.current = requestAnimationFrame(checkMotion);
+      return;
+    }
+
     const motionDetected = detectMotion();
 
     if (motionDetected) {
@@ -93,11 +112,11 @@ export function useMotionDetection(
 
     // Continue checking
     animationFrameRef.current = requestAnimationFrame(checkMotion);
-  }, [detectMotion, isMotionActive, onMotionDetected, onMotionStopped]);
+  }, [detectMotion, isMotionActive, onMotionDetected, onMotionStopped, isMotionEnabled]);
 
   // Periodically refresh motion status if active
   useEffect(() => {
-    if (!isMotionActive) return;
+    if (!isMotionActive || !isMotionEnabled) return;
 
     const interval = setInterval(() => {
       // If we are still active (which we are, because isMotionActive is true),
@@ -118,7 +137,7 @@ export function useMotionDetection(
     }, config.motionTimeout / 2); // Refresh halfway through timeout
 
     return () => clearInterval(interval);
-  }, [isMotionActive, onMotionDetected, onMotionStopped]);
+  }, [isMotionActive, onMotionDetected, onMotionStopped, isMotionEnabled]);
 
   useEffect(() => {
     // Start motion detection
@@ -134,5 +153,5 @@ export function useMotionDetection(
     };
   }, [checkMotion]);
 
-  return { isMotionActive };
+  return { isMotionActive, isMotionEnabled, toggleMotion };
 }
