@@ -1,0 +1,56 @@
+import express from 'express';
+import { createServer } from 'http';
+import dotenv from 'dotenv';
+import { PortalDatabase } from './database';
+import { SignalingServer } from './signaling-server';
+
+// Load environment variables
+dotenv.config();
+
+const PORT = parseInt(process.env.PORT || '3001', 10);
+const DATABASE_PATH = process.env.DATABASE_PATH || './portal.db';
+const PRESENCE_TIMEOUT = parseInt(process.env.PRESENCE_TIMEOUT || '30000', 10);
+
+// Create Express app and HTTP server
+const app = express();
+const httpServer = createServer(app);
+
+// Initialize database
+const db = new PortalDatabase(DATABASE_PATH);
+console.log(`Database initialized at ${DATABASE_PATH}`);
+
+// Initialize signaling server
+const signalingServer = new SignalingServer(httpServer, db, PRESENCE_TIMEOUT);
+console.log('Signaling server initialized');
+
+// Basic health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Start server
+httpServer.listen(PORT, () => {
+  console.log(`Portal server listening on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  signalingServer.cleanup();
+  db.close();
+  httpServer.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  signalingServer.cleanup();
+  db.close();
+  httpServer.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
