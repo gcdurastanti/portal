@@ -5,6 +5,7 @@ import { useWebRTC } from './hooks/useWebRTC';
 import { VideoGrid } from './components/VideoGrid';
 import { StatusBar } from './components/StatusBar';
 import { playChime } from './utils/sound';
+import { config } from './config';
 import './App.css';
 
 function App() {
@@ -25,11 +26,13 @@ function App() {
   } = useSignaling();
 
   const [isMuted, setIsMuted] = useState(false);
+  const [motionTimeout, setMotionTimeout] = useState(config.motionTimeout);
 
   const { isMotionActive, isMotionEnabled, toggleMotion } = useMotionDetection(
     videoRef,
     reportMotionDetected,
-    reportMotionStopped
+    reportMotionStopped,
+    motionTimeout
   );
 
   const toggleMute = () => {
@@ -110,6 +113,8 @@ function App() {
         onToggleMute={toggleMute}
         isMotionEnabled={isMotionEnabled}
         onToggleMotion={toggleMotion}
+        motionTimeout={motionTimeout}
+        onSetMotionTimeout={setMotionTimeout}
       />
 
       {isInConference && (

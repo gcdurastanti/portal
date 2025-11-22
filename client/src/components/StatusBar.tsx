@@ -10,6 +10,8 @@ interface StatusBarProps {
   onToggleMute: () => void;
   isMotionEnabled: boolean;
   onToggleMotion: () => void;
+  motionTimeout: number;
+  onSetMotionTimeout: (timeout: number) => void;
 }
 
 export function StatusBar({
@@ -20,8 +22,19 @@ export function StatusBar({
   isMuted,
   onToggleMute,
   isMotionEnabled,
-  onToggleMotion
+  onToggleMotion,
+  motionTimeout,
+  onSetMotionTimeout
 }: StatusBarProps) {
+  const cycleTimeout = () => {
+    // Cycle through 5s, 15s, 30s, 60s
+    const timeouts = [5000, 15000, 30000, 60000];
+    // Find closest current timeout (in case it's custom)
+    const currentIndex = timeouts.findIndex(t => t >= motionTimeout);
+    const nextIndex = (currentIndex + 1) % timeouts.length;
+    onSetMotionTimeout(timeouts[nextIndex]);
+  };
+
   return (
     <div className="status-bar">
       <div className="status-item">
@@ -32,6 +45,10 @@ export function StatusBar({
       <div className="status-item clickable" onClick={onToggleMotion}>
         <div className={`status-indicator ${isMotionEnabled ? (isMotionActive ? 'active' : 'inactive') : 'disabled'}`} />
         <span>Motion: {!isMotionEnabled ? 'Off' : (isMotionActive ? 'Active' : 'Idle')}</span>
+      </div>
+
+      <div className="status-item clickable" onClick={cycleTimeout} title="Click to change motion timeout">
+        <span>⏱️ {motionTimeout / 1000}s</span>
       </div>
 
       <div className="status-item clickable" onClick={onToggleMute}>

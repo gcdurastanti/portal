@@ -4,7 +4,8 @@ import { config } from '../config';
 export function useMotionDetection(
   videoRef: React.RefObject<HTMLVideoElement>,
   onMotionDetected: () => void,
-  onMotionStopped: () => void
+  onMotionStopped: () => void,
+  timeoutDuration: number = config.motionTimeout
 ) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
@@ -12,12 +13,17 @@ export function useMotionDetection(
   const [isMotionActive, setIsMotionActive] = useState(false);
   const animationFrameRef = useRef<number | null>(null);
 
+  const lastCheckTimeRef = useRef<number>(0);
+
   const detectMotion = useCallback(() => {
+    const now = Date.now();
+    if (now - lastCheckTimeRef.current < 100) {
+      return false;
+    }
+    lastCheckTimeRef.current = now;
+
     const video = videoRef.current;
     if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      if (video && video.readyState !== video.HAVE_ENOUGH_DATA) {
-        console.debug(`Video not ready: ${video.readyState}`);
-      }
       return false;
     }
 
@@ -58,7 +64,8 @@ export function useMotionDetection(
 
     previousFrameRef.current = currentFrame;
 
-    // Consider motion detected if > 0.1% of pixels changed significantly
+    // Consider motion detected if > 0.2% of pixels changed significantly
+    // (Lowered slightly, but checking less frequently means we capture more change per check)
     const totalPixels = canvas.width * canvas.height;
     const motionPercentage = (diffCount / totalPixels) * 100;
 
@@ -66,7 +73,7 @@ export function useMotionDetection(
       console.debug(`Motion percentage: ${motionPercentage.toFixed(2)}%`);
     }
 
-    return motionPercentage > 0.1;
+    return motionPercentage > 0.2;
   }, [videoRef]);
 
   const [isMotionEnabled, setIsMotionEnabled] = useState(true);
@@ -98,7 +105,8 @@ export function useMotionDetection(
         onMotionDetected();
       }
 
-      // Reset timeout
+      // Reset timeout - ALWAYS do this when motion is detected, 
+      // so we respect the current timeoutDuration
       if (motionTimeoutRef.current) {
         clearTimeout(motionTimeoutRef.current);
       }
@@ -107,12 +115,20 @@ export function useMotionDetection(
         console.log('Motion stopped (timeout)');
         setIsMotionActive(false);
         onMotionStopped();
-      }, config.motionTimeout);
+      }, timeoutDuration);
+    } else if (isMotionActive && !motionTimeoutRef.current) {
+      // Safety net: If we are active but have no timeout running (e.g. cleared by mistake or race condition),
+      // start one now to ensure we eventually stop.
+      motionTimeoutRef.current = setTimeout(() => {
+        console.log('Motion stopped (safety timeout)');
+        setIsMotionActive(false);
+        onMotionStopped();
+      }, timeoutDuration);
     }
 
     // Continue checking
     animationFrameRef.current = requestAnimationFrame(checkMotion);
-  }, [detectMotion, isMotionActive, onMotionDetected, onMotionStopped, isMotionEnabled]);
+  }, [detectMotion, isMotionActive, onMotionDetected, onMotionStopped, isMotionEnabled, timeoutDuration]);
 
   // Periodically refresh motion status if active
   useEffect(() => {
@@ -121,23 +137,17 @@ export function useMotionDetection(
     const interval = setInterval(() => {
       // If we are still active (which we are, because isMotionActive is true),
       // we should re-trigger the motion detected event to refresh the server timeout
-      console.log('Refreshing motion status');
+      console.log('Refreshing motion status (heartbeat)');
       onMotionDetected();
 
-      // Also reset the local timeout
-      if (motionTimeoutRef.current) {
-        clearTimeout(motionTimeoutRef.current);
-      }
-      motionTimeoutRef.current = setTimeout(() => {
-        console.log('Motion stopped (timeout)');
-        setIsMotionActive(false);
-        onMotionStopped();
-      }, config.motionTimeout);
+      // DO NOT reset the local timeout here. 
+      // The local timeout should only be reset by checkMotion when ACTUAL motion is detected.
+      // If we reset it here, we create an infinite loop where the heartbeat keeps the motion active forever.
 
-    }, config.motionTimeout / 2); // Refresh halfway through timeout
+    }, 10000); // Fixed heartbeat every 10s, independent of motion timeout
 
     return () => clearInterval(interval);
-  }, [isMotionActive, onMotionDetected, onMotionStopped, isMotionEnabled]);
+  }, [isMotionActive, onMotionDetected, onMotionStopped, isMotionEnabled, timeoutDuration]);
 
   useEffect(() => {
     // Start motion detection
