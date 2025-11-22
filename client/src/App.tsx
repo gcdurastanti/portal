@@ -51,6 +51,7 @@ function App() {
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.muted = true;
         }
       } catch (err) {
         console.error('Error accessing camera:', err);

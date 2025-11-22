@@ -12,6 +12,7 @@ export function VideoGrid({ localStream, remoteStreams, showLocal = true }: Vide
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.muted = true;
     }
   }, [localStream]);
 
