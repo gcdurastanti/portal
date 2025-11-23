@@ -15,6 +15,11 @@ export function useMotionDetection(
 
   const lastCheckTimeRef = useRef<number>(0);
 
+  // Advanced filtering state
+  const motionHistoryRef = useRef<number[]>([]); // Track recent motion percentages
+  const baselineRef = useRef<number[]>([]); // For adaptive thresholding
+  const motionVelocityRef = useRef<number[]>([]); // Track rate of change
+
   const detectMotion = useCallback(() => {
     const now = Date.now();
     if (now - lastCheckTimeRef.current < 100) {
@@ -64,16 +69,71 @@ export function useMotionDetection(
 
     previousFrameRef.current = currentFrame;
 
-    // Consider motion detected if > 0.2% of pixels changed significantly
-    // (Lowered slightly, but checking less frequently means we capture more change per check)
     const totalPixels = canvas.width * canvas.height;
     const motionPercentage = (diffCount / totalPixels) * 100;
 
-    if (motionPercentage > 0) {
-      console.debug(`Motion percentage: ${motionPercentage.toFixed(2)}%`);
+    // === ADVANCED FILTERING ===
+
+    // 1. Temporal Filtering: Track motion history
+    motionHistoryRef.current.push(motionPercentage);
+    if (motionHistoryRef.current.length > 5) {
+      motionHistoryRef.current.shift(); // Keep last 5 frames
     }
 
-    return motionPercentage > 0.2;
+    // 2. Adaptive Thresholding: Build baseline
+    if (motionPercentage < 0.3) { // Only use low-motion frames for baseline
+      baselineRef.current.push(motionPercentage);
+      if (baselineRef.current.length > 30) {
+        baselineRef.current.shift(); // Keep last 30 low-motion samples
+      }
+    }
+
+    // Calculate adaptive threshold
+    const baseline = baselineRef.current.length > 0
+      ? baselineRef.current.reduce((a, b) => a + b, 0) / baselineRef.current.length
+      : 0.2;
+
+    const adaptiveThreshold = Math.max(0.5, baseline * 3); // At least 3x baseline, min 0.5%
+
+    // 3. Motion Velocity Filtering: Track rate of change
+    if (motionHistoryRef.current.length >= 2) {
+      const velocity = Math.abs(
+        motionHistoryRef.current[motionHistoryRef.current.length - 1] -
+        motionHistoryRef.current[motionHistoryRef.current.length - 2]
+      );
+      motionVelocityRef.current.push(velocity);
+      if (motionVelocityRef.current.length > 5) {
+        motionVelocityRef.current.shift();
+      }
+    }
+
+    // Calculate average velocity (human motion has consistent velocity changes)
+    const avgVelocity = motionVelocityRef.current.length > 0
+      ? motionVelocityRef.current.reduce((a, b) => a + b, 0) / motionVelocityRef.current.length
+      : 0;
+
+    // Temporal check: Need motion in at least 3 of last 5 frames
+    const recentMotionCount = motionHistoryRef.current.filter(m => m > adaptiveThreshold).length;
+    const hasTemporalMotion = recentMotionCount >= 3;
+
+    // Velocity check: Human motion typically has velocity > 0.1%
+    // Slow environmental changes like lighting have very low velocity
+    const hasSignificantVelocity = avgVelocity > 0.1 || motionPercentage > adaptiveThreshold * 2;
+
+    const isRealMotion = hasTemporalMotion && hasSignificantVelocity && motionPercentage > adaptiveThreshold;
+
+    if (motionPercentage > 0.1) {
+      console.debug(
+        `Motion: ${motionPercentage.toFixed(2)}% | ` +
+        `Baseline: ${baseline.toFixed(2)}% | ` +
+        `Threshold: ${adaptiveThreshold.toFixed(2)}% | ` +
+        `Temporal: ${recentMotionCount}/5 | ` +
+        `Velocity: ${avgVelocity.toFixed(3)}% | ` +
+        `Real: ${isRealMotion}`
+      );
+    }
+
+    return isRealMotion;
   }, [videoRef]);
 
   const [isMotionEnabled, setIsMotionEnabled] = useState(true);

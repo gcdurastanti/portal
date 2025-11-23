@@ -1,6 +1,6 @@
 export const config = {
   signalingServerUrl: import.meta.env.VITE_SIGNALING_SERVER || '/',
-  motionThreshold: parseInt(import.meta.env.VITE_MOTION_THRESHOLD || '30', 10),
+  motionThreshold: parseInt(import.meta.env.VITE_MOTION_THRESHOLD || '60', 10),
   motionTimeout: parseInt(import.meta.env.VITE_MOTION_TIMEOUT || '60000', 10),
   deviceId: import.meta.env.VITE_DEVICE_ID || generateDeviceId(),
   groupId: import.meta.env.VITE_GROUP_ID || 'default-group',
