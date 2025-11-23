@@ -144,9 +144,10 @@ export class SignalingServer {
       timestamp: Date.now()
     });
 
-    // If there's an active conference, notify the new client
+    // If there's an active conference AND this device is present, notify the new client
     const conferenceParticipants = this.activeConferences.get(groupId);
-    if (conferenceParticipants && conferenceParticipants.size >= 2) {
+    const isDevicePresent = presentDevices.some(d => d.id === deviceId);
+    if (conferenceParticipants && conferenceParticipants.size >= 2 && isDevicePresent) {
       this.sendMessage(socket, {
         type: MessageType.CONFERENCE_START,
         payload: {
@@ -222,15 +223,22 @@ export class SignalingServer {
 
     console.log(`Starting conference for group ${groupId} with ${participantIds.length} participants`);
 
-    // Notify all participants
-    this.broadcastToGroup(groupId, {
+    // Notify ONLY present participants (not the entire group)
+    const message: Message = {
       type: MessageType.CONFERENCE_START,
       payload: {
         conferenceId: groupId,
         participants: participantIds
       },
       timestamp: Date.now()
-    });
+    };
+
+    for (const deviceId of participantIds) {
+      const socketId = this.deviceSockets.get(deviceId);
+      if (socketId) {
+        this.io.to(socketId).emit('message', message);
+      }
+    }
   }
 
   private endConference(groupId: string) {
