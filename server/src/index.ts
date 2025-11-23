@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { PortalDatabase } from './database';
 import { SignalingServer } from './signaling-server';
 import { createAuthRoutes } from './routes/auth-routes';
+import { createGroupRoutes } from './routes/group-routes';
+import { createDeviceRoutes } from './routes/device-routes';
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +27,9 @@ console.log(`Database initialized at ${DATABASE_PATH}`);
 
 // API Routes
 app.use('/api/auth', createAuthRoutes(db));
+app.use('/api/groups', createGroupRoutes(db));
+app.use('/api/devices', createDeviceRoutes(db));
+app.use('/api/users', createDeviceRoutes(db)); // For /api/users/me/devices
 
 // Health check endpoint
 app.get('/health', (req, res) => {
