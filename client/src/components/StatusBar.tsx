@@ -1,5 +1,6 @@
 
 import { Device } from '@portal/shared';
+import { useAuth } from '../contexts/AuthContext';
 
 interface StatusBarProps {
   connected: boolean;
@@ -26,6 +27,8 @@ export function StatusBar({
   motionTimeout,
   onSetMotionTimeout
 }: StatusBarProps) {
+  const { user, logout } = useAuth();
+
   const cycleTimeout = () => {
     // Cycle through 5s, 15s, 30s, 60s
     const timeouts = [5000, 15000, 30000, 60000];
@@ -62,6 +65,15 @@ export function StatusBar({
       {isInConference && (
         <div className="status-item conference">
           <span>In Conference</span>
+        </div>
+      )}
+
+      <div className="status-spacer" style={{ flex: 1 }} />
+
+      {user && (
+        <div className="status-item user-info">
+          <span>👤 {user.displayName}</span>
+          <button className="logout-button" onClick={logout}>Sign Out</button>
         </div>
       )}
     </div>
