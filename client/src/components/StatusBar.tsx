@@ -73,6 +73,13 @@ export function StatusBar({
       {user && (
         <div className="status-item user-info">
           <span>👤 {user.displayName}</span>
+          <button
+            className="logout-button"
+            onClick={() => window.location.href = '/groups'}
+            style={{ marginRight: '8px' }}
+          >
+            Groups
+          </button>
           <button className="logout-button" onClick={logout}>Sign Out</button>
         </div>
       )}

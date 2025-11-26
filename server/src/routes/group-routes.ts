@@ -59,7 +59,9 @@ export function createGroupRoutes(db: PortalDatabase): Router {
                 return res.status(404).json({ error: 'Group not found' });
             }
 
-            res.json({ group });
+            const members = db.getGroupMembers(groupId);
+
+            res.json({ group, members });
         } catch (error) {
             console.error('Get group error:', error);
             res.status(500).json({ error: 'Internal server error' });
@@ -188,17 +190,29 @@ export function createGroupRoutes(db: PortalDatabase): Router {
                 return res.status(403).json({ error: 'Access denied' });
             }
 
-            // For now, only allow removing yourself (leave group)
-            // TODO: Add owner/admin permissions check for removing others
-            if (userId !== targetUserId) {
-                return res.status(403).json({
-                    error: 'You can only remove yourself from a group'
-                });
+            const members = db.getGroupMembers(groupId);
+            const requester = members.find(m => m.id === userId);
+            const target = members.find(m => m.id === targetUserId);
+
+            if (!requester || !target) {
+                return res.status(404).json({ error: 'Member not found' });
             }
 
-            db.removeGroupMember(groupId, targetUserId);
+            // Allow if removing self (leave group)
+            if (userId === targetUserId) {
+                db.removeGroupMember(groupId, targetUserId);
+                return res.json({ success: true });
+            }
 
-            res.json({ success: true });
+            // Allow if requester is owner and target is not owner
+            if (requester.role === 'owner' && target.role !== 'owner') {
+                db.removeGroupMember(groupId, targetUserId);
+                return res.json({ success: true });
+            }
+
+            return res.status(403).json({
+                error: 'You do not have permission to remove this member'
+            });
         } catch (error) {
             console.error('Remove member error:', error);
             res.status(500).json({ error: 'Internal server error' });

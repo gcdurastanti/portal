@@ -241,6 +241,24 @@ export class PortalDatabase {
     stmt.run(groupId, userId);
   }
 
+  getGroupMembers(groupId: string): { id: string; displayName: string; email: string; role: string; avatarUrl: string | null }[] {
+    const stmt = this.db.prepare(`
+      SELECT u.id, u.display_name, u.email, u.avatar_url, gm.role
+      FROM users u
+      INNER JOIN group_memberships gm ON u.id = gm.user_id
+      WHERE gm.group_id = ?
+    `);
+    const rows = stmt.all(groupId) as any[];
+
+    return rows.map(row => ({
+      id: row.id,
+      displayName: row.display_name,
+      email: row.email,
+      role: row.role,
+      avatarUrl: row.avatar_url
+    }));
+  }
+
   // Invitation operations
   createInvitation(invitation: Omit<Invitation, 'createdAt'>): void {
     const stmt = this.db.prepare(`

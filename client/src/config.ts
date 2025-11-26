@@ -1,5 +1,5 @@
 export const config = {
-  signalingServerUrl: import.meta.env.VITE_SIGNALING_SERVER || '/',
+  signalingServerUrl: import.meta.env.VITE_SIGNALING_SERVER || (import.meta.env.DEV ? 'http://localhost:3001' : '/'),
   motionThreshold: parseInt(import.meta.env.VITE_MOTION_THRESHOLD || '60', 10),
   motionTimeout: parseInt(import.meta.env.VITE_MOTION_TIMEOUT || '60000', 10),
   deviceId: import.meta.env.VITE_DEVICE_ID || generateDeviceId(),

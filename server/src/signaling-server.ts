@@ -145,6 +145,8 @@ export class SignalingServer {
     });
 
     // If there's an active conference AND this device is present, notify the new client
+    // DISABLED: LiveKit handles conference logic
+    /*
     const conferenceParticipants = this.activeConferences.get(groupId);
     const isDevicePresent = presentDevices.some(d => d.id === deviceId);
     if (conferenceParticipants && conferenceParticipants.size >= 2 && isDevicePresent) {
@@ -157,6 +159,7 @@ export class SignalingServer {
         timestamp: Date.now()
       });
     }
+    */
   }
 
   private handleMotionDetected(socket: Socket, payload: MotionDetectedPayload) {
@@ -201,11 +204,14 @@ export class SignalingServer {
     });
 
     // Start or end conference based on presence
+    // DISABLED: LiveKit handles conference logic on the client side
+    /*
     if (presentDevices.length >= 2) {
       this.startConference(groupId, presentDevices);
     } else {
       this.endConference(groupId);
     }
+    */
   }
 
   private startConference(groupId: string, participants: Device[]) {
