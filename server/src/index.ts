@@ -1,6 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { PortalDatabase } from './database';
 import { SignalingServer } from './signaling-server';
 import { createAuthRoutes } from './routes/auth-routes';
@@ -20,6 +21,7 @@ const app = express();
 const httpServer = createServer(app);
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 
 // Initialize database
