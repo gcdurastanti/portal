@@ -22,6 +22,12 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      },
+      '/livekit-rtc': {
+        target: 'ws://localhost:7880',
+        ws: true,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/livekit-rtc/, '')
       }
     }
   }

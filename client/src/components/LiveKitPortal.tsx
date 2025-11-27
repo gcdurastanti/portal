@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { useSignaling } from '../hooks/useSignaling';
@@ -10,6 +10,9 @@ export function LiveKitPortal() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [token, setToken] = useState<string>("");
     const [isMotionActive, setIsMotionActive] = useState(false);
+    const [motionTimeout, setMotionTimeout] = useState(config.motionTimeout);
+    const [isMuted, setIsMuted] = useState(false);
+    const [manualConnect, setManualConnect] = useState(false);
 
     const {
         connected: signalingConnected,
@@ -20,26 +23,76 @@ export function LiveKitPortal() {
 
     // We need to keep track of motion to trigger room entry/exit
     // We can wrap the original useMotionDetection or just use it and react to its state
-    const handleMotionDetected = () => {
+    const handleMotionDetected = useCallback(() => {
         setIsMotionActive(true);
         reportMotionDetected();
-    };
+    }, [reportMotionDetected]);
 
-    const handleMotionStopped = () => {
+    const handleMotionStopped = useCallback(() => {
         setIsMotionActive(false);
-        setToken(""); // Disconnect
+        setToken(""); // Always disconnect when motion stops (timeout)
+        setManualConnect(false); // Reset manual flag
         reportMotionStopped();
-    };
+    }, [reportMotionStopped]);
 
     const { isMotionEnabled, toggleMotion } = useMotionDetection(
         videoRef,
         handleMotionDetected,
         handleMotionStopped,
-        config.motionTimeout
+        motionTimeout
     );
 
+    // Camera handling
     useEffect(() => {
-        if (isMotionActive && !token) {
+        let stream: MediaStream | null = null;
+
+        const startCamera = async () => {
+            if (token) return; // Don't start if we are in a call
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        frameRate: { ideal: 24 }
+                    },
+                    audio: false
+                });
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (err) {
+                console.error("Failed to access camera:", err);
+            }
+        };
+
+        const stopCamera = () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            if (videoRef.current) {
+                videoRef.current.srcObject = null;
+            }
+        };
+
+        if (!token) {
+            startCamera();
+        }
+
+        return () => {
+            stopCamera();
+        };
+    }, [token]);
+
+    useEffect(() => {
+        // Join if:
+        // 1. Not already connected (!token)
+        // 2. AND (Manual connect requested OR (Motion is active AND Multiple devices present))
+        const shouldJoin = !token && (manualConnect || (isMotionActive && presentDevices.length >= 2));
+
+        if (shouldJoin) {
             const fetchToken = async () => {
                 try {
                     const response = await fetch('/api/livekit/token', {
@@ -55,11 +108,19 @@ export function LiveKitPortal() {
                     setToken(data.token);
                 } catch (error) {
                     console.error('Failed to fetch LiveKit token:', error);
+                    setManualConnect(false); // Reset on failure
                 }
             };
             fetchToken();
         }
-    }, [isMotionActive, token]);
+    }, [isMotionActive, token, presentDevices.length, manualConnect]);
+
+    const handleDisconnect = () => {
+        setToken("");
+        setManualConnect(false);
+        setIsMotionActive(false); // Reset motion state
+        reportMotionStopped(); // Explicitly clear presence
+    };
 
     return (
         <div className="app">
@@ -68,22 +129,23 @@ export function LiveKitPortal() {
                 isMotionActive={isMotionActive}
                 isInConference={!!token}
                 presentDevices={presentDevices}
-                isMuted={false} // TODO: Implement mute
-                onToggleMute={() => { }}
+                isMuted={isMuted}
+                onToggleMute={() => setIsMuted(!isMuted)}
                 isMotionEnabled={isMotionEnabled}
                 onToggleMotion={toggleMotion}
-                motionTimeout={config.motionTimeout}
-                onSetMotionTimeout={() => { }}
+                motionTimeout={motionTimeout}
+                onSetMotionTimeout={setMotionTimeout}
             />
 
             {token ? (
                 <LiveKitRoom
                     video={true}
-                    audio={true}
+                    audio={!isMuted}
                     token={token}
-                    serverUrl={import.meta.env.VITE_LIVEKIT_URL || "ws://localhost:7880"}
+                    serverUrl={import.meta.env.VITE_LIVEKIT_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/livekit-rtc`}
                     data-lk-theme="default"
                     style={{ height: '100vh' }}
+                    onDisconnected={handleDisconnect}
                 >
                     <VideoConference />
                 </LiveKitRoom>
@@ -104,6 +166,16 @@ export function LiveKitPortal() {
                                 {presentDevices.length} {presentDevices.length === 1 ? 'person' : 'people'} present
                             </p>
                         )}
+                        <button
+                            className="auth-button"
+                            style={{ marginTop: '20px', width: 'auto' }}
+                            onClick={() => {
+                                setManualConnect(true);
+                                handleMotionDetected(); // Also trigger motion state
+                            }}
+                        >
+                            Connect Manually
+                        </button>
                     </div>
                 </div>
             )}
