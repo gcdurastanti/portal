@@ -259,6 +259,17 @@ export class PortalDatabase {
     }));
   }
 
+  getUserMembershipRole(userId: string, groupId: string): string | null {
+    const stmt = this.db.prepare('SELECT role FROM group_memberships WHERE user_id = ? AND group_id = ?');
+    const result = stmt.get(userId, groupId) as { role: string } | undefined;
+    return result ? result.role : null;
+  }
+
+  updateMemberRole(groupId: string, userId: string, role: 'owner' | 'admin' | 'member'): void {
+    const stmt = this.db.prepare('UPDATE group_memberships SET role = ? WHERE group_id = ? AND user_id = ?');
+    stmt.run(role, groupId, userId);
+  }
+
   // Invitation operations
   createInvitation(invitation: Omit<Invitation, 'createdAt'>): void {
     const stmt = this.db.prepare(`
