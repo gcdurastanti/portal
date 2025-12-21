@@ -10,7 +10,7 @@ import {
 } from '@portal/shared';
 import { config } from '../config';
 
-export function useSignaling() {
+export function useSignaling(groupId: string) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [presentDevices, setPresentDevices] = useState<Device[]>([]);
@@ -30,6 +30,8 @@ export function useSignaling() {
   }, []);
 
   useEffect(() => {
+    if (!groupId) return;
+
     const socket = io(config.signalingServerUrl);
     socketRef.current = socket;
 
@@ -40,7 +42,7 @@ export function useSignaling() {
       // Register device
       const registerPayload: RegisterPayload = {
         deviceId: config.deviceId,
-        groupId: config.groupId,
+        groupId: groupId,
         deviceName: config.deviceName
       };
 
@@ -93,7 +95,7 @@ export function useSignaling() {
     return () => {
       socket.disconnect();
     };
-  }, [sendMessage]);
+  }, [sendMessage, groupId]);
 
   const reportMotionDetected = useCallback(() => {
     const payload: MotionDetectedPayload = {

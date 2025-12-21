@@ -114,6 +114,13 @@ export class SignalingServer {
         this.sendError(socket, 'REGISTER_FAILED', 'Failed to register device');
         return;
       }
+    } else {
+      // Device exists, update its group to the current one
+      try {
+        this.db.updateDeviceGroup(deviceId, groupId);
+      } catch (error) {
+        console.error('Failed to update device group:', error);
+      }
     }
 
     // Map socket to device

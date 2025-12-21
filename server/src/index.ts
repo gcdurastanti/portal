@@ -33,7 +33,7 @@ app.use('/api/auth', createAuthRoutes(db));
 app.use('/api/groups', createGroupRoutes(db));
 app.use('/api/devices', createDeviceRoutes(db));
 app.use('/api/users', createDeviceRoutes(db)); // For /api/users/me/devices
-app.use('/api/livekit', createLiveKitRoutes());
+app.use('/api/livekit', createLiveKitRoutes(db));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

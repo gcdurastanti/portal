@@ -310,9 +310,14 @@ export class PortalDatabase {
   }
 
   // Device operations (modified for user association)
-  createDevice(id: string, groupId: string, name: string, userId?: string): void {
-    const stmt = this.db.prepare('INSERT INTO devices (id, group_id, user_id, name) VALUES (?, ?, ?, ?)');
-    stmt.run(id, groupId, userId || null, name);
+  createDevice(id: string, groupId: string, name: string): void {
+    const stmt = this.db.prepare('INSERT INTO devices (id, group_id, name) VALUES (?, ?, ?)');
+    stmt.run(id, groupId, name);
+  }
+
+  updateDeviceGroup(id: string, groupId: string): void {
+    const stmt = this.db.prepare('UPDATE devices SET group_id = ? WHERE id = ?');
+    stmt.run(groupId, id);
   }
 
   getDevice(id: string): { id: string; groupId: string; userId: string | null; name: string } | null {

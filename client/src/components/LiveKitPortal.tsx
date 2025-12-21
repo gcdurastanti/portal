@@ -3,11 +3,14 @@ import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { useSignaling } from '../hooks/useSignaling';
 import { useMotionDetection } from '../hooks/useMotionDetection';
+import { useActiveGroup } from '../contexts/ActiveGroupContext';
 import { config } from '../config';
+import { api } from '../api/client';
 import { StatusBar } from './StatusBar';
 
 export function LiveKitPortal() {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const { activeGroupId } = useActiveGroup();
     const [token, setToken] = useState<string>("");
     const [isMotionActive, setIsMotionActive] = useState(false);
     const [motionTimeout, setMotionTimeout] = useState(config.motionTimeout);
@@ -19,7 +22,20 @@ export function LiveKitPortal() {
         presentDevices,
         reportMotionDetected,
         reportMotionStopped
-    } = useSignaling();
+    } = useSignaling(activeGroupId);
+
+    // Clear token when active group changes to ensure we leave the previous room
+    useEffect(() => {
+        setToken("");
+        setManualConnect(false);
+    }, [activeGroupId]);
+
+    // Re-announce presence when connected if motion is active
+    useEffect(() => {
+        if (signalingConnected && isMotionActive) {
+            reportMotionDetected();
+        }
+    }, [signalingConnected, isMotionActive, reportMotionDetected]);
 
     // We need to keep track of motion to trigger room entry/exit
     // We can wrap the original useMotionDetection or just use it and react to its state
@@ -95,16 +111,11 @@ export function LiveKitPortal() {
         if (shouldJoin) {
             const fetchToken = async () => {
                 try {
-                    const response = await fetch('/api/livekit/token', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            roomName: config.groupId,
-                            participantName: config.deviceName,
-                            identity: config.deviceId,
-                        }),
+                    const data = await api.post<{ token: string }>('/livekit/token', {
+                        roomName: activeGroupId,
+                        participantName: config.deviceName,
+                        identity: config.deviceId,
                     });
-                    const data = await response.json();
                     setToken(data.token);
                 } catch (error) {
                     console.error('Failed to fetch LiveKit token:', error);
