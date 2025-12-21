@@ -85,6 +85,14 @@ export class SignalingServer {
         this.handleIceCandidate(socket, msg.payload as IceCandidatePayload);
         break;
 
+      case MessageType.PEER_JOINED:
+        this.handlePeerJoined(socket, msg.payload as any);
+        break;
+
+      case MessageType.PEER_LEFT:
+        this.handlePeerLeft(socket, msg.payload as any);
+        break;
+
       default:
         console.warn(`Unknown message type: ${msg.type}`);
     }
@@ -318,6 +326,64 @@ export class SignalingServer {
       payload: { from, to, candidate },
       timestamp: Date.now()
     });
+  }
+
+  private handlePeerJoined(socket: Socket, payload: any) {
+    const deviceId = this.socketDevices.get(socket.id);
+    if (!deviceId) return;
+
+    const device = this.db.getDevice(deviceId);
+    if (!device) return;
+
+    // Broadcast to group (excluding sender)
+    const group = this.db.getGroup(device.groupId);
+    if (!group) return;
+
+    const message: Message = {
+      type: MessageType.PEER_JOINED,
+      payload: {
+        deviceId: device.id,
+        deviceName: device.name
+      },
+      timestamp: Date.now()
+    };
+
+    for (const id of group.deviceIds) {
+      if (id === deviceId) continue; // Skip sender
+      const socketId = this.deviceSockets.get(id);
+      if (socketId) {
+        this.io.to(socketId).emit('message', message);
+      }
+    }
+  }
+
+  private handlePeerLeft(socket: Socket, payload: any) {
+    const deviceId = this.socketDevices.get(socket.id);
+    if (!deviceId) return;
+
+    const device = this.db.getDevice(deviceId);
+    if (!device) return;
+
+    // Broadcast to group (excluding sender)
+    const group = this.db.getGroup(device.groupId);
+    if (!group) return;
+
+    const message: Message = {
+      type: MessageType.PEER_LEFT,
+      payload: {
+        deviceId: device.id,
+        deviceName: device.name
+      },
+      timestamp: Date.now()
+    };
+
+    for (const id of group.deviceIds) {
+      if (id === deviceId) continue; // Skip sender
+      const socketId = this.deviceSockets.get(id);
+      if (socketId) {
+        this.io.to(socketId).emit('message', message);
+      }
+    }
   }
 
   private handleDisconnect(socket: Socket) {

@@ -11,44 +11,48 @@ import './App.css';
 
 
 import { ActiveGroupProvider } from './contexts/ActiveGroupContext';
+import { GooglePhotosCallback } from './components/GooglePhotosCallback';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 function App() {
   return (
     <AuthProvider>
-      <ActiveGroupProvider>
-        <Router>
-          <Routes>
-            {/* ... (inside App function Routes) */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/groups"
-              element={
-                <ProtectedRoute>
-                  <GroupsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/groups/:groupId"
-              element={
-                <ProtectedRoute>
-                  <GroupDetailsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <LiveKitPortal />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </ActiveGroupProvider>
+      <NotificationProvider>
+        <ActiveGroupProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route
+                path="/groups"
+                element={
+                  <ProtectedRoute>
+                    <GroupsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups/:groupId"
+                element={
+                  <ProtectedRoute>
+                    <GroupDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <LiveKitPortal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/photos/callback" element={<GooglePhotosCallback />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </ActiveGroupProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

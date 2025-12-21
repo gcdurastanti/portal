@@ -109,6 +109,18 @@ export class PortalDatabase {
       )
     `);
 
+    // Google Photos Config table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS google_photos_config (
+        user_id TEXT PRIMARY KEY,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        expiry_date INTEGER,
+        selected_album_id TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
     // Devices table (modified for user association)
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS devices (
@@ -367,6 +379,44 @@ export class PortalDatabase {
   deleteDevice(id: string): void {
     const stmt = this.db.prepare('DELETE FROM devices WHERE id = ?');
     stmt.run(id);
+  }
+
+  // Google Photos methods
+  saveGooglePhotosConfig(userId: string, config: { accessToken: string; refreshToken?: string; expiryDate?: number; selectedAlbumId?: string }): void {
+    // Check if exists
+    const existing = this.getGooglePhotosConfig(userId);
+
+    if (existing) {
+      const stmt = this.db.prepare(`
+        UPDATE google_photos_config 
+        SET access_token = ?, 
+            refresh_token = COALESCE(?, refresh_token), 
+            expiry_date = COALESCE(?, expiry_date),
+            selected_album_id = COALESCE(?, selected_album_id)
+        WHERE user_id = ?
+      `);
+      stmt.run(config.accessToken, config.refreshToken || null, config.expiryDate || null, config.selectedAlbumId || null, userId);
+    } else {
+      const stmt = this.db.prepare(`
+        INSERT INTO google_photos_config (user_id, access_token, refresh_token, expiry_date, selected_album_id)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      stmt.run(userId, config.accessToken, config.refreshToken || null, config.expiryDate || null, config.selectedAlbumId || null);
+    }
+  }
+
+  getGooglePhotosConfig(userId: string): { accessToken: string; refreshToken: string | null; expiryDate: number | null; selectedAlbumId: string | null } | null {
+    const stmt = this.db.prepare('SELECT * FROM google_photos_config WHERE user_id = ?');
+    const row = stmt.get(userId) as any;
+
+    if (!row) return null;
+
+    return {
+      accessToken: row.access_token,
+      refreshToken: row.refresh_token,
+      expiryDate: row.expiry_date,
+      selectedAlbumId: row.selected_album_id
+    };
   }
 
   close() {

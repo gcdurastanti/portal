@@ -8,6 +8,7 @@ import { createAuthRoutes } from './routes/auth-routes';
 import { createGroupRoutes } from './routes/group-routes';
 import { createDeviceRoutes } from './routes/device-routes';
 import { createLiveKitRoutes } from './routes/livekit-routes';
+import { createGooglePhotosRoutes } from './routes/google-photos-routes';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/groups', createGroupRoutes(db));
 app.use('/api/devices', createDeviceRoutes(db));
 app.use('/api/users', createDeviceRoutes(db)); // For /api/users/me/devices
 app.use('/api/livekit', createLiveKitRoutes(db));
+app.use('/api/photos', createGooglePhotosRoutes(db));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

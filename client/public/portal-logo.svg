@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- Subtle Premium Gradient -->
+    <linearGradient id="premiumGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E5E5E5;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Soft Shadow for Depth -->
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+      <feOffset dx="0" dy="2" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- The Gateway: A simple, perfect arch -->
+  <!-- Background circle for app icon context (optional, usually app icons are square with radius) -->
+  <!-- We will just draw the symbol itself, assuming it's placed on a black background -->
+  
+  <path d="M25 80 L25 45 A 25 25 0 0 1 75 45 L75 80 L63 80 L63 45 A 13 13 0 0 0 37 45 L37 80 Z" fill="url(#premiumGrad)" filter="url(#softShadow)" />
+
+</svg>
